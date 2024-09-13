@@ -1,7 +1,10 @@
 #!/bin/bash
+#env
+source inference/bin/activate
   
+
 # go to location
-cd ~/jetson-inference/python/www/flask
+cd jetson-inference/python/www/flask
 
 # Loop to rerun the command if it fails
 while true; do
