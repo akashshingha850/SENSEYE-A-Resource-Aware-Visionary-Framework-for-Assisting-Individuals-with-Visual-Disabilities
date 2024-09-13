@@ -1,11 +1,14 @@
 #!/bin/bash
+
+#venv
+source inference/bin/activate
   
 # go to location
-cd ~/jetson-inference/build/aarch64/bin
+#cd ~/jetson-inference/build/aarch64/bin
 
 # Loop to rerun the command if it fails
 while true; do
-	detectnet --ssl-key=key.pem --ssl-cert=cert.pem /dev/video6 webrtc://@:8555/output
+	detectnet --headless --ssl-key=key.pem --ssl-cert=cert.pem /dev/video0 webrtc://@:8555/output
     #./detectnet --ssl-key=key.pem --ssl-cert=cert.pem /dev/video6 webrtc://@:8555/output
 	#video-viewer /dev/video6 
 	if [ $? -eq 0 ]; then
