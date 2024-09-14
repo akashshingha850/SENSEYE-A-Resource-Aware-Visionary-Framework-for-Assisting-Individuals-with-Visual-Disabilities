@@ -1,6 +1,6 @@
 #!/bin/bash
 #env
-source inference/bin/activate
+#source inference/bin/activate
   
 
 # go to location
