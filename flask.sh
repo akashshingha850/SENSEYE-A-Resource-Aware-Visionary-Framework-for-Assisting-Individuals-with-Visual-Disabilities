@@ -4,12 +4,12 @@
   
 
 # go to location
-cd jetson-inference/python/www/flask
+#cd jetson-inference/python/www/flask
 
 # Loop to rerun the command if it fails
 while true; do
 
-	python3 app.py \
+	python3 jetson-inference/python/www/flask/app.py \
 	--ssl-key=key.pem --ssl-cert=cert.pem \
     --classification=resnet18 \
     --detection=ssd-mobilenet-v2 \
