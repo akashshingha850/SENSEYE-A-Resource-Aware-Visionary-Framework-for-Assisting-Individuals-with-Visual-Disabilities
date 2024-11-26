@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="Locate objects in a live camera st
 parser.add_argument("input", type=str, default="/dev/video4", nargs='?', help="URI of the input stream")
 parser.add_argument("output", type=str, default="", nargs='?', help="URI of the output stream")
 parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
-parser.add_argument("--overlay", type=str, default="lines,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
+parser.add_argument("--overlay", type=str, default="lines", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
 parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
 
 try:
@@ -56,11 +56,15 @@ while True:
     color_image = np.asanyarray(color_frame.get_data())
     print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
 
-    # Convert the BGR image to RGB format using OpenCV
+    # Convert the BGR image to RGB format using OpenCV (this is crucial)
     rgb_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+    # cv2.imshow("RGB Image", color_image)
+    # key=cv2.waitKey(1)
 
     # Convert the RGB image (numpy array) to CUDA memory that Jetson Inference can use
     cuda_image = cudaFromNumpy(rgb_image)
+    # output.Render(cuda_image) 
+    # continue
 
     # Detect objects in the image (with overlay)
     detections = net.Detect(cuda_image, overlay=args.overlay)
@@ -92,23 +96,24 @@ while True:
         label_name = net.GetClassDesc(label)  # Get the class name based on class ID
 
         # Prepare the overlay text with object label, distance, and confidence
-        overlay_text = f"{label_name}: {distance:.2f}m, {confidence*100:.1f}%"
+        overlay_text = f"{confidence*100:.1f}% {label_name} at {distance:.2f}m"
 
-        # Draw the bounding box with color and confidence text
-        box_color = (0, 255, 0)  # Color for the bounding box (green in this case)
-        cv2.rectangle(color_image, (x1, y1), (x2, y2), box_color, 2)
-        cv2.putText(color_image, overlay_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, box_color, 2, cv2.LINE_AA)
+        # Set the color for the bounding box
+        box_color = (255, 255, 255)  # White color for the bounding box
+        cv2.rectangle(color_image, (x1, y1), (x2, y2), box_color, 1)
+        cv2.putText(color_image, overlay_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, box_color, 1, cv2.LINE_AA)
 
         # Print the distance, label, and confidence
         print(f"Object: {label_name}, Distance: {distance:.2f} meters, Confidence: {confidence*100:.1f}%")
 
     # Convert the color image back to CUDA memory and render
-    cuda_image = cudaFromNumpy(color_image)
+    final_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+    cuda_image = cudaFromNumpy(final_image)
     output.Render(cuda_image)  # Render the image with detections
     output.SetStatus("Object Detection | Network FPS: {:.2f}".format(net.GetNetworkFPS()))  # Show FPS
 
     # Print out performance info
-    net.PrintProfilerTimes()
+    ##net.PrintProfilerTimes()
 
     # Exit on input/output EOS
     if not output.IsStreaming():
