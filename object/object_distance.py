@@ -15,7 +15,7 @@ parser.add_argument("input", type=str, default="/dev/video4", nargs='?', help="U
 parser.add_argument("output", type=str, default="", nargs='?', help="URI of the output stream")
 parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
 parser.add_argument("--overlay", type=str, default="lines", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
-parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
+parser.add_argument("--threshold", type=float, default=0.4, help="minimum detection threshold to use") 
 
 try:
     args = parser.parse_known_args()[0]
