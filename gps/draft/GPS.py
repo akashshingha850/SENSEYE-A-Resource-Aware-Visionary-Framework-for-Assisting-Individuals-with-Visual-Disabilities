@@ -36,7 +36,7 @@ def getGpsPosition():
 	answer = 0
 	print('Start GPS session...')
 	rec_buff = ''
-	sendAt('AT+CGPS=1,1','OK',1)
+	sendAt('AT+CGPS=1,2','OK',1)
 	time.sleep(2)
 	while rec_null:
 		answer = sendAt('AT+CGPSINFO','+CGPSINFO: ',1)
