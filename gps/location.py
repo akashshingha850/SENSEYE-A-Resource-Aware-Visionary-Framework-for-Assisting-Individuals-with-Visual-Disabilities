@@ -51,17 +51,21 @@ def getGpsPosition():
         try:
             data = gps_info.split(":")[1].strip()
             print(f"Raw data: {data}")
-            if data and data != ",,,,,,,,":  # Check if GPS data is valid
+            # Check if GPS data is valid
+            if data and data != ",,,,,,,,": 
                 lat_raw, lon_raw = data.split(",")[0], data.split(",")[2]
-                lat = convert_to_decimal(lat_raw)  # Latitude conversion
-                lon = convert_to_decimal(lon_raw, is_longitude=True)  # Longitude conversion
-                place_name = getPlaceName(lat, lon)
-                print(f"GPS Location: {lat:.7f}, {lon:.7f}")
-                return lat, lon, place_name, "GPS"
+                # Ensure lat_raw and lon_raw are not empty
+                if lat_raw and lon_raw:
+                    lat = convert_to_decimal(lat_raw)  # Latitude conversion
+                    lon = convert_to_decimal(lon_raw, is_longitude=True)  # Longitude conversion
+                    place_name = getPlaceName(lat, lon)
+                    print(f"GPS Location: {lat:.7f}, {lon:.7f}")
+                    return lat, lon, place_name, "GPS"
         except Exception as e:
             print(f"Error parsing GPS data: {e}")
     print("No valid GPS data available.")
     return None
+
 
 # Function to get location from IP
 def getIpLocation():
@@ -125,13 +129,16 @@ def time_ago(timestamp):
         return f"{int(seconds // 60)} minutes ago"
     return f"{int(seconds // 3600)} hours ago"
 
+
 # Main publishing loop
 def publish_location():
     try:
         powerOn()
         while True:
+            # Try to get GPS location
             location = getGpsPosition()
             if not location:
+                # Fallback to IP-based location if GPS is unavailable or invalid
                 location = getIpLocation()
 
             if location:
@@ -143,6 +150,7 @@ def publish_location():
             else:
                 print("Failed to obtain location.")
 
+            # Delay before retrying
             time.sleep(10)
     except KeyboardInterrupt:
         print("Stopping location publishing.")

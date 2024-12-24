@@ -1,16 +1,33 @@
 #!/bin/bash
 
-# Start a new tmux session named "gps" with detached mode
-tmux new-session -d -s gps -n location_py
+# Function to run location.py in the background and monitor it
+start_location() {
+    while true; do
+        echo "Starting location.py..."
+        python3 /home/jetson/bme/gps/location.py
+        echo "location.py crashed. Restarting in 5 seconds..."
+        sleep 5
+    done
+}
 
-# Run location.py in the first tab and restart if it crashes
-tmux send-keys -t gps 'while true; do python3 /home/jetson/bme/gps/location.py; sleep 5; done' C-m
+# Function to run mqtt_server.py in the foreground and monitor it
+start_mqtt_server() {
+    while true; do
+        echo "Starting mqtt_server.py..."
+        python3 /home/jetson/bme/gps/mqtt_server.py
+        echo "mqtt_server.py crashed. Restarting in 5 seconds..."
+        sleep 5
+    done
+}
 
-# Create a new window (tab) in the same session for mqtt_server.py
-tmux new-window -t gps -n mqtt_server_py
+# Start location.py in the background
+start_location &
+LOCATION_PID=$!
 
-# Run mqtt_server.py in the second tab and restart if it crashes
-tmux send-keys -t gps:1 'while true; do python3 /home/jetson/bme/gps/mqtt_server.py; sleep 5; done' C-m
+# Start mqtt_server.py in the foreground
+start_mqtt_server
 
-# Attach to the tmux session so the user can see the tabs
-tmux attach-session -t gps
+# Cleanup: Kill location.py when mqtt_server.py exits
+echo "Stopping location.py..."
+kill $LOCATION_PID
+echo "Done."
