@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="Locate objects in a live camera st
                                  formatter_class=argparse.RawTextHelpFormatter, 
                                  epilog=detectNet.Usage() + videoSource.Usage() + videoOutput.Usage() + Log.Usage())
 
-parser.add_argument("input", type=str, default="/dev/video4", nargs='?', help="URI of the input stream")
+parser.add_argument("input", type=str, default="", nargs='?', help="URI of the input stream")
 parser.add_argument("output", type=str, default="webrtc://@:8555/object", nargs='?', help="URI of the output stream")
 parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
 parser.add_argument("--overlay", type=str, default="lines", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
@@ -29,8 +29,8 @@ pipeline = rs.pipeline()
 config = rs.config()
 
 # Enable the color and depth streams (RGB and depth)
-config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
-config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)    #1280, 720
+config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)    #640,480
 
 # Start the pipeline
 pipeline.start(config)
