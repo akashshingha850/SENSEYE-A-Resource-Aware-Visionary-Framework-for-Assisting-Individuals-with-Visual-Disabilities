@@ -99,6 +99,14 @@ def rag_ask(query):
 def text_to_speech(text):
     os.system(f'echo "{text}" | /home/jetson/piper/build/piper --model /usr/local/share/piper/models/en_US-lessac-medium.onnx --output_file response.wav && aplay response.wav')
 
+# Ask a question via voice and get a response via voice
+def ask_via_voice(question):
+    text_to_speech(question)  # Use TTS to ask the question
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmpfile:
+        record_audio(tmpfile.name, duration=5)  # Record user's response
+        user_response = transcribe_audio(tmpfile.name)  # Transcribe the response
+    return user_response.strip().lower()
+
 # Main loop for the assistant
 def main():
     while True:
@@ -111,6 +119,17 @@ def main():
             print(f"Agent response: {response}")
             if response:
                 text_to_speech(response)  # Convert response to speech
+
+        # Ask the user if they want to continue
+        user_choice = ask_via_voice("Do you want to ask another question? Say 'yes' or 'no'.")
+        print(f"User said: {user_choice}")
+        if user_choice in ['no', 'n',' no', 'No.', 'no.', 'No',  'No.', 'nope', 'Nope', 'nope.', 'Nope.', 'nah', 'Nah', 'nah.', 'Nah.', 'no thanks', 'No thanks', 'no thanks.', 'No thanks.']:
+            text_to_speech("Exiting assistant. Goodbye!")
+            print("Exiting assistant. Goodbye!")
+            break
+        elif user_choice not in ['yes', 'y']:
+            text_to_speech("Sorry, I did not understand. Please say 'yes' to continue or 'no' to exit.")
+
 
 # Entry point of the script
 if __name__ == "__main__":
