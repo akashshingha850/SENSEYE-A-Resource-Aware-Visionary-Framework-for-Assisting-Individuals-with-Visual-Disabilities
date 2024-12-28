@@ -89,5 +89,6 @@ def index():
 
 # Start Flask and SocketIO server
 if __name__ == "__main__":
+
     print("Starting Flask and SocketIO server...")
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)

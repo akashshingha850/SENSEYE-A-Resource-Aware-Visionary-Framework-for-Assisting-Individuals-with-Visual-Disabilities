@@ -52,6 +52,68 @@ class VectorDatabase:
 db = VectorDatabase(dim=384)
 db.add_documents(docs)
 
+#  set audio output
+def set_default_sink_if_available(desired_sink_name):
+    """
+    Set the default audio output device to the desired sink if it's available and not already selected.
+    """
+    try:
+        # Get the current default sink
+        result = subprocess.run(["pactl", "get-default-sink"], stdout=subprocess.PIPE, text=True, check=True)
+        current_sink = result.stdout.strip()
+        print(f"Current default sink: {current_sink}")
+
+        # Check if the desired sink is already set
+        if current_sink == desired_sink_name:
+            print(f"{desired_sink_name} is already the default sink. Skipping.")
+            return
+
+        # List all available sinks
+        result = subprocess.run(["pactl", "list", "short", "sinks"], stdout=subprocess.PIPE, text=True, check=True)
+        available_sinks = [line.split("\t")[1] for line in result.stdout.splitlines()]
+        print(f"Available sinks: {available_sinks}")
+
+        # Check if the desired sink is available
+        if desired_sink_name in available_sinks:
+            # Set the desired sink as the default
+            subprocess.run(["pactl", "set-default-sink", desired_sink_name], check=True)
+            print(f"Default sink set to: {desired_sink_name}")
+        else:
+            print(f"{desired_sink_name} is not available. Skipping.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error managing default sink: {e}")
+
+def set_default_source_if_available(desired_source_name):
+    """
+    Set the default audio input device (microphone) to the desired source if it's available.
+    """
+    try:
+        # Get the current default source
+        result = subprocess.run(["pactl", "get-default-source"], stdout=subprocess.PIPE, text=True, check=True)
+        current_source = result.stdout.strip()
+        print(f"Current default source: {current_source}")
+
+        # Check if the desired source is already set
+        if current_source == desired_source_name:
+            print(f"{desired_source_name} is already the default source. Skipping.")
+            return
+
+        # List all available sources
+        result = subprocess.run(["pactl", "list", "short", "sources"], stdout=subprocess.PIPE, text=True, check=True)
+        available_sources = [line.split("\t")[1] for line in result.stdout.splitlines()]
+        print(f"Available sources: {available_sources}")
+
+        # Check if the desired source is available
+        if desired_source_name in available_sources:
+            # Set the desired source as the default
+            subprocess.run(["pactl", "set-default-source", desired_source_name], check=True)
+            print(f"Default source set to: {desired_source_name}")
+        else:
+            print(f"{desired_source_name} is not available. Skipping.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error managing default source: {e}")
+
+
 # Play sound (beep) to signal recording start/stop
 def play_sound(sound_file):
     os.system(f"aplay {sound_file}")
@@ -113,6 +175,7 @@ def assistant_logic():
         print(f"User said: {query}")
         
         if not query:
+            text_to_speech("Going to sleep mode.")
             print("No input detected. Returning to sleep mode.")
             return  # Exit to sleep mode
         
@@ -141,6 +204,15 @@ def assistant_logic():
 
 # Main function with hotword detection
 def main():
+
+    # Set the default sink to Jabra
+    sink_name = "alsa_output.usb-GN_Netcom_A_S_Jabra_EVOLVE_20_MS_A009E07823660A-00.analog-stereo"
+    set_default_sink_if_available(sink_name)
+
+     # Set the default source to Jabra
+    source_name = "alsa_input.usb-GN_Netcom_A_S_Jabra_EVOLVE_20_MS_A009E07823660A-00.mono-fallback"
+    set_default_source_if_available(source_name)
+
     """Continuously listens for the hotword and triggers assistant logic."""
     hotword = "hello"  # Set your hotword
     print("Listening for hotword...")
