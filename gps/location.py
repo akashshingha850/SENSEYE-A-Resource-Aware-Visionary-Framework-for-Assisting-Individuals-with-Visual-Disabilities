@@ -97,6 +97,24 @@ def getPlaceName(lat, lon):
         print(f"Error getting place name: {e}")
     return "Unknown Location"
 
+# Function to save location details to a text file
+def save_location_to_file(place_name, method):
+    """
+    Saves location details to a text file named 'location.txt'.
+    Creates the file if it does not already exist.
+    
+    Args:
+        place_name (str): Place name from reverse geocoding.
+        method (str): Method of location retrieval (e.g., GPS or IP).
+        last_update (datetime): Timestamp of the last update.
+    """
+    try:
+        with open("location.txt", "w") as file:  # 'w' mode creates the file if it doesn't exist
+            file.write(f"Your {method} location is {place_name}\n")
+        print("Location details saved to location.txt")
+    except Exception as e:
+        print(f"Error saving location to file: {e}")
+
 # Power on the SIM7600X module
 def powerOn():
     print("Powering on SIM7600X...")
@@ -147,6 +165,7 @@ def publish_location():
                 payload = f"{lat},{lon},{method},{place_name}"
                 mqtt_client.publish(TOPIC, payload)
                 print(f"{place_name} | {method} | Last update: {time_ago(last_update)}")
+                save_location_to_file(place_name, method)
             else:
                 print("Failed to obtain location.")
 
