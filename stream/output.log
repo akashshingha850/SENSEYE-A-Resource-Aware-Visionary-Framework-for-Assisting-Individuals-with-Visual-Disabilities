@@ -1,0 +1,96 @@
+[gstreamer] initialized gstreamer, version 1.20.3.0
+[gstreamer] gstDecoder -- creating decoder for 127.0.0.1
+[0;31m[gstreamer] gstDecoder -- Could not open resource for reading.
+[0m[0;31m[gstreamer] gstDecoder -- resource discovery and auto-negotiation failed
+[0m[gstreamer] gstDecoder -- pipeline string:
+[gstreamer] rtspsrc location=rtsp://127.0.0.1:8554/live latency=10 ! queue ! rtph264depay ! nvv4l2decoder name=decoder enable-max-performance=1 ! video/x-raw(memory:NVMM) ! nvvidconv name=vidconv ! video/x-raw ! appsink name=mysink sync=false
+[0;32m[video]  created gstDecoder from rtsp://127.0.0.1:8554/live
+[0m------------------------------------------------
+gstDecoder video options:
+------------------------------------------------
+  -- URI: rtsp://127.0.0.1:8554/live
+     - protocol:  rtsp
+     - location:  127.0.0.1
+     - port:      8554
+  -- deviceType: ip
+  -- ioType:     input
+  -- codec:      H264
+  -- codecType:  v4l2
+  -- frameRate:  0
+  -- numBuffers: 4
+  -- zeroCopy:   true
+  -- flipMethod: none
+  -- loop:       0
+  -- latency     10
+------------------------------------------------
+[OpenGL] glDisplay -- X screen 0 resolution:  1280x1024
+[OpenGL] glDisplay -- X window resolution:    1280x1024
+[OpenGL] glDisplay -- display device initialized (1280x1024)
+[0;32m[video]  created glDisplay from display://0
+[0m------------------------------------------------
+glDisplay video options:
+------------------------------------------------
+  -- URI: display://0
+     - protocol:  display
+     - location:  0
+  -- deviceType: display
+  -- ioType:     output
+  -- width:      1280
+  -- height:     1024
+  -- frameRate:  0
+  -- numBuffers: 4
+  -- zeroCopy:   true
+------------------------------------------------
+[gstreamer] opening gstDecoder for streaming, transitioning pipeline to GST_STATE_PLAYING
+Opening in BLOCKING MODE 
+[gstreamer] gstreamer changed state from NULL to READY ==> mysink
+[gstreamer] gstreamer changed state from NULL to READY ==> capsfilter1
+[gstreamer] gstreamer changed state from NULL to READY ==> vidconv
+[gstreamer] gstreamer changed state from NULL to READY ==> capsfilter0
+[gstreamer] gstreamer changed state from NULL to READY ==> decoder
+[gstreamer] gstreamer changed state from NULL to READY ==> rtph264depay0
+[gstreamer] gstreamer changed state from NULL to READY ==> queue0
+[gstreamer] gstreamer changed state from NULL to READY ==> rtspsrc0
+[gstreamer] gstreamer changed state from NULL to READY ==> pipeline0
+[gstreamer] gstreamer changed state from READY to PAUSED ==> capsfilter1
+[gstreamer] gstreamer changed state from READY to PAUSED ==> vidconv
+[gstreamer] gstreamer changed state from READY to PAUSED ==> capsfilter0
+[gstreamer] gstreamer changed state from READY to PAUSED ==> decoder
+[gstreamer] gstreamer changed state from READY to PAUSED ==> rtph264depay0
+[gstreamer] gstreamer stream status CREATE ==> src
+[gstreamer] gstreamer changed state from READY to PAUSED ==> queue0
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[gstreamer] gstreamer stream status ENTER ==> src
+[gstreamer] gstreamer changed state from READY to PAUSED ==> rtspsrc0
+[gstreamer] gstreamer changed state from READY to PAUSED ==> pipeline0
+[gstreamer] gstreamer message new-clock ==> pipeline0
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> capsfilter1
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> vidconv
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> capsfilter0
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> decoder
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> rtph264depay0
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> queue0
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[gstreamer] gstreamer changed state from PAUSED to PLAYING ==> rtspsrc0
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[gstreamer] gstreamer rtspsrc0 ERROR Could not open resource for reading.
+[gstreamer] gstreamer Debugging info: ../gst/rtsp/gstrtspsrc.c(6427): gst_rtspsrc_setup_auth (): /GstPipeline:pipeline0/GstRTSPSrc:rtspsrc0:
+No supported authentication protocol was found
+[gstreamer] gstreamer rtspsrc0 ERROR Not found
+[gstreamer] gstreamer Debugging info: ../gst/rtsp/gstrtspsrc.c(6736): gst_rtspsrc_send (): /GstPipeline:pipeline0/GstRTSPSrc:rtspsrc0:
+Not Found (404)
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[gstreamer] gstreamer message progress ==> rtspsrc0
+[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m[0;33m[gstreamer] gstDecoder::Capture() -- a timeout occurred waiting for the next image buffer
+[0m

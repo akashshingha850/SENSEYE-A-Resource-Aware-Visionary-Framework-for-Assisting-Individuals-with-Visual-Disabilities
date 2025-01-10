@@ -1,22 +1,37 @@
 #!/bin/bash
-  
-# go to location
-#cd ~/jetson-inference/build/aarch64/bin
 
-# Loop to rerun the command if it fails
+# Initialize a counter for timeouts
+timeout_count=0
+max_timeouts=10
+
+# Infinite loop to retry the process if timeout occurs
 while true; do
-	video-viewer --headless --ssl-key=key.pem --ssl-cert=cert.pem /dev/video4 webrtc://@:8554/output
-	if [ $? -eq 0 ]; then
-		break
-	else
-		echo "Command failed, retrying..."
-		sleep 2  # Optional: wait for 2 seconds before retrying
-	fi
-done
+    # Start the video viewer command and monitor its output
+    video-viewer --headless --ssl-key=key.pem --ssl-cert=cert.pem --input-codec=h264 rtsp://127.0.0.1:8554/live webrtc://@:8555/output 2>&1 | while IFS= read -r line
+    do
+        # Log the line to the console for debugging
+        echo "$line"
 
-  
-	#rtsp://@:8554/stream 
-	#./video-viewer --ssl-key=key.pem --ssl-cert=cert.pem /dev/video6 	webrtc://@:8554/output
-	#video-viewer /dev/video6 
-	#	webrtc://@:8554/output
-	# rtsp://@:8554/stream
+        # Check if the line contains the timeout message
+        if [[ "$line" == *"timeout occurred waiting for the next image buffer"* ]]; then
+            # Increment the timeout counter
+            ((timeout_count++))
+
+            # If we reach the max timeouts, exit the script
+            if [[ $timeout_count -ge $max_timeouts ]]; then
+                echo "Timeout limit reached, exiting."
+                # Kill the background process if it's running
+                pkill -f "video-viewer"
+                exit 1
+            fi
+        else
+            # Reset the timeout counter if a different message appears
+            timeout_count=0
+        fi
+    done
+
+    # If we get here, it means the video-viewer has finished or was interrupted
+    # Wait 5 seconds before retrying
+    echo "Retrying in 5 seconds..."
+    sleep 5
+done
