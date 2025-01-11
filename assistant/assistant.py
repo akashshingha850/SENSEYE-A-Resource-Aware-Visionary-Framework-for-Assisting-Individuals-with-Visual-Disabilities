@@ -5,6 +5,68 @@ import torch
 import subprocess
 from gtts import gTTS
 
+import paho.mqtt.client as mqtt
+import datetime
+
+### Live Location  ###
+latest_location = {
+    "lat": 0.0,
+    "lon": 0.0,
+    "method": " ",
+    "place_name": "Unknown",
+    "last_update": datetime.datetime.now(),
+}
+
+def on_message(client, userdata, message):
+    """Callback: parses the incoming MQTT messages on topic 'location/live'."""
+    global latest_location
+    payload = message.payload.decode("utf-8").strip()
+    print(f"MQTT message received: {payload}")
+
+    try:
+        # Expecting payload like: lat,lon,method,place_name
+        parts = payload.split(",", maxsplit=3)
+        if len(parts) < 3:
+            raise ValueError("Not enough values in payload")
+        method = parts[2]
+        place_name = parts[3] if len(parts) > 3 else "Unknown"
+
+        latest_location["method"] = method
+        latest_location["location"] = place_name
+        latest_location["last_update"] = datetime.datetime.now()
+    except Exception as e:
+        print(f"Error parsing location data: {e}")
+
+def init_mqtt_client():
+    """Initialize MQTT client, connect, and subscribe to 'location/live'."""
+    client = mqtt.Client()
+    client.on_message = on_message
+    try:
+        client.connect("localhost", 1883)  # or your broker details
+        client.subscribe("location/live")
+        client.loop_start()
+        print("MQTT client connected and subscribed to 'location/live'")
+    except Exception as e:
+        print(f"Error connecting to MQTT broker: {e}")
+    return client
+
+def time_ago(timestamp):
+    """
+    Returns a string describing how long ago 'timestamp' occurred, e.g. '2 minutes ago'.
+    """
+    now = datetime.datetime.now()
+    diff = now - timestamp
+    seconds = diff.total_seconds()
+    if seconds < 60:
+        return f"{int(seconds)} seconds ago"
+    elif seconds < 3600:
+        return f"{int(seconds // 60)} minutes ago"
+    else:
+        return f"{int(seconds // 3600)} hours ago"
+
+
+
+### VOICE AI ASSISTANT ###
 
 # Optimization: Use a more efficient embedding model for Jetson Orin Nano
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -162,7 +224,7 @@ def ask_llama(query, context):
 # def text_to_speech(text):
 #     os.system(f'echo "{text}" | /home/jetson/piper/build/piper --model /usr/local/share/piper/models/en_US-lessac-medium.onnx --output_file response.wav && aplay response.wav')
 
-from gtts import gTTS
+
 
 # Text-to-speech using gTTS
 def text_to_speech(text):
@@ -204,15 +266,24 @@ def assistant_logic():
             print("No input detected. Returning to sleep mode.")
             return  # Exit to sleep mode
         
-        if "turn off" in query.lower() or "exit" in query.lower():
+        elif "location" in query.lower() or "my location" in query.lower() or 1:
+            # Retrieve the most recent location from latest_location
+            place_name = latest_location.get("location", "Unknown")
+            method = latest_location.get("method", "Unknown")
+            last_update = latest_location.get("last_update", None)
+            last_update = time_ago(last_update)
+
+            response_text = f"Your {method} location is {place_name}, obtained {last_update}."
+
+            print(f"Location response: {response_text}")
+            text_to_speech(response_text)
+            return
+        
+        elif "turn off" in query.lower() or "exit" in query.lower():
             print("Exiting assistant. Goodbye!")
             text_to_speech("Exiting assistant. Goodbye!")
             exit(0)
-        # for lcoation
-        elif "location" in query.lower() or "my location" in query.lower():
-            print("your location is XYZ")
-            #text_to_speech("Exiting assistant. Goodbye!")
-            
+           
         
         # Check if the user wants to run a specific script
         elif "open camera" in query.lower():
@@ -242,6 +313,9 @@ def main():
      # Set the default source to Jabra
     source_name = "alsa_input.usb-GN_Netcom_A_S_Jabra_EVOLVE_20_MS_A009E07823660A-00.mono-fallback"
     set_default_source_if_available(source_name)
+
+    # Initialize and start the MQTT client so we receive location updates
+    init_mqtt_client()
 
     """Continuously listens for the hotword and triggers assistant logic."""
     hotword = "hello"  # Set your hotword

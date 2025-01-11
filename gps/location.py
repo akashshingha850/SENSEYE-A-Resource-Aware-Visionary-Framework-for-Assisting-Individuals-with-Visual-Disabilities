@@ -170,7 +170,7 @@ def publish_location():
                 print("Failed to obtain location.")
 
             # Delay before retrying
-            #time.sleep(10)
+            time.sleep(10)
     except KeyboardInterrupt:
         print("Stopping location publishing.")
     finally:

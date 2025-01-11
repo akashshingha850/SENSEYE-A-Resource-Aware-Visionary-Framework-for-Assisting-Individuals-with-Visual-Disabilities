@@ -1,4 +1,5 @@
 #!/bin/bash
+cd /home/jetson/bme/assistant 
 
 # Function to run llama-server in the background and monitor it
 start_llama_server() {
@@ -13,6 +14,7 @@ start_llama_server() {
 }
 
 # Function to run assistant.py in the foreground and monitor it
+
 start_assistant() {
     while true; do
         echo "Starting assistant.py..."
