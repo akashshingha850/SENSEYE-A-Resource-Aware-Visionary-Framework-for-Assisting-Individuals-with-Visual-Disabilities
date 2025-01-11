@@ -208,9 +208,14 @@ def assistant_logic():
             print("Exiting assistant. Goodbye!")
             text_to_speech("Exiting assistant. Goodbye!")
             exit(0)
-
+        # for lcoation
+        elif "location" in query.lower() or "my location" in query.lower():
+            print("your location is XYZ")
+            #text_to_speech("Exiting assistant. Goodbye!")
+            
+        
         # Check if the user wants to run a specific script
-        if "open camera" in query.lower():
+        elif "open camera" in query.lower():
             print("Running 'vlm' bash script...")
             text_to_speech("Running the VLM script now.")
             try:

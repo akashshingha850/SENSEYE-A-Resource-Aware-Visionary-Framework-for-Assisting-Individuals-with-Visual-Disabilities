@@ -34,12 +34,14 @@ stream_webcam() {
         webrtc://@:8555/output
 }
 
-# 3) Monitor the output of video-viewer for timeouts
+# 3) Monitor the output of video-viewer for timeouts or failure
 #    - Reads lines from stdin (the output of video-viewer).
-#    - If max_timeouts is exceeded, return 1; otherwise 0.
+#    - If max_timeouts is exceeded or input stream fails, return 1 => indicates a source switch.
 monitor() {
     while IFS= read -r line; do
         echo "$line"
+
+        # Condition A: Timeout messages
         if [[ "$line" == *"timeout occurred waiting for the next image buffer"* ]]; then
             ((timeout_count++))
             echo "Timeout #$timeout_count"
@@ -48,11 +50,17 @@ monitor() {
                 echo "Reached $max_timeouts timeouts. Need to switch source..."
                 # Kill video-viewer so we can restart
                 pkill -f "video-viewer"
-                # Return non-zero => indicates "switch source"
                 return 1
             fi
+
+        # Condition B: "failed to create input stream" => e.g. /dev/video4 doesn't exist
+        elif [[ "$line" == *"failed to create input stream"* ]]; then
+            echo "Input stream creation failed. Switching source..."
+            pkill -f "video-viewer"
+            return 1
+
         else
-            # Reset counter if it's not a timeout message
+            # Reset counter if not a timeout line
             timeout_count=0
         fi
     done

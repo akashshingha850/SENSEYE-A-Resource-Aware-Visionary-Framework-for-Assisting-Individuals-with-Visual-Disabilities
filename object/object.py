@@ -151,13 +151,14 @@ while True:
     # Convert the color image back to CUDA memory and render
     final_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
     cuda_image = cudaFromNumpy(final_image)
-    output.Render(cuda_image)  # Render the image with detections
-    output.SetStatus("Object Detection | Network FPS: {:.2f}".format(net.GetNetworkFPS()))  # Show FPS
+    
+    # # Render the image with detections
+    # output.Render(cuda_image)  
+    # output.SetStatus("Object Detection | Network FPS: {:.2f}".format(net.GetNetworkFPS()))  # Show FPS
 
-    # Print out performance info
-    ##net.PrintProfilerTimes()
-    #sleep (2)
-    #break
+    # # Print out performance info
+    # net.PrintProfilerTimes()
+   
 
     # Exit on input/output EOS
     if not output.IsStreaming():
