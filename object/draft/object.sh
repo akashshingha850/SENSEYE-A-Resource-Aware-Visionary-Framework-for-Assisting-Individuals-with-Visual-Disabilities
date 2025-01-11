@@ -1,20 +1,29 @@
 #!/bin/bash
 
-#venv
-source inference/bin/activate
-  
-# go to location
-#cd ~/jetson-inference/build/aarch64/bin
+# Define the path to the object detection script
+OBJECT_DETECTION_SCRIPT="/home/jetson/bme/object/draft/object_distance_rtsp.py"
 
-# Loop to rerun the command if it fails
+# Function to start the object detection script
+start_object_detection() {
+    echo "Starting object_distance.py..."
+    while true; do
+        echo "nvidia" | sudo -S python3 $OBJECT_DETECTION_SCRIPT
+        if [ $? -ne 0 ]; then
+            echo "object_distance.py failed. Retrying in 2 seconds..."
+            sleep 3  # Wait before retrying
+        else
+            echo "object_distance.py exited successfully. Exiting..."
+            break
+        fi
+    done
+}
+
+# Main execution
+
+# Start the object detection script
 while true; do
-	detectnet --headless --ssl-key=key.pem --ssl-cert=cert.pem /dev/video6 webrtc://@:8555/output
-    #./detectnet --ssl-key=key.pem --ssl-cert=cert.pem /dev/video6 webrtc://@:8555/output
-	#video-viewer /dev/video6 
-	if [ $? -eq 0 ]; then
-		break
-	else
-		echo "Command failed, retrying..."
-		sleep 2  # Optional: wait for 2 seconds before retrying
-	fi
+    start_object_detection
+    sleep 5
+    echo "object_distance.py exited. Restarting in 5 seconds..."
+    
 done

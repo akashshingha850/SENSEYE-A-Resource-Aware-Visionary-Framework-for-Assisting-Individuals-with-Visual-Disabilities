@@ -45,7 +45,7 @@ def convert_to_decimal(degrees_minutes, is_longitude=False):
 def getGpsPosition():
     print("Attempting to get GPS location...")
     sendAt("AT+CGPS=1,1", "OK", 1)
-    time.sleep(2)
+    #time.sleep(2)
     gps_info = sendAt("AT+CGPSINFO", "+CGPSINFO: ", 1)
     if gps_info:
         try:
@@ -165,12 +165,12 @@ def publish_location():
                 payload = f"{lat},{lon},{method},{place_name}"
                 mqtt_client.publish(TOPIC, payload)
                 print(f"{place_name} | {method} | Last update: {time_ago(last_update)}")
-                save_location_to_file(place_name, method)
+                #save_location_to_file(place_name, method)
             else:
                 print("Failed to obtain location.")
 
             # Delay before retrying
-            time.sleep(10)
+            #time.sleep(10)
     except KeyboardInterrupt:
         print("Stopping location publishing.")
     finally:

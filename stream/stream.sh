@@ -1,37 +1,91 @@
 #!/bin/bash
 
-# Initialize a counter for timeouts
+##############################################################################
+# CONFIGURATION
+##############################################################################
+cd /home/jetson/bme/stream || exit 1
+
+# Variables
 timeout_count=0
-max_timeouts=10
+max_timeouts=15
 
-# Infinite loop to retry the process if timeout occurs
-while true; do
-    # Start the video viewer command and monitor its output
-    video-viewer --headless --ssl-key=key.pem --ssl-cert=cert.pem --input-codec=h264 rtsp://127.0.0.1:8554/live webrtc://@:8555/output 2>&1 | while IFS= read -r line
-    do
-        # Log the line to the console for debugging
+# Flag for which source to use
+use_rtsp=true   # start with RTSP
+
+##############################################################################
+# FUNCTIONS
+##############################################################################
+# 1) RTSP streaming
+stream_rtsp() {
+    video-viewer --headless \
+        --ssl-key=key.pem \
+        --ssl-cert=cert.pem \
+        --input-codec=h264 \
+        rtsp://127.0.0.1:8554/live \
+        webrtc://@:8555/output
+}
+
+# 2) Webcam streaming
+stream_webcam() {
+    video-viewer --headless \
+        --ssl-key=key.pem \
+        --ssl-cert=cert.pem \
+        /dev/video4 \
+        webrtc://@:8555/output
+}
+
+# 3) Monitor the output of video-viewer for timeouts
+#    - Reads lines from stdin (the output of video-viewer).
+#    - If max_timeouts is exceeded, return 1; otherwise 0.
+monitor() {
+    while IFS= read -r line; do
         echo "$line"
-
-        # Check if the line contains the timeout message
         if [[ "$line" == *"timeout occurred waiting for the next image buffer"* ]]; then
-            # Increment the timeout counter
             ((timeout_count++))
+            echo "Timeout #$timeout_count"
 
-            # If we reach the max timeouts, exit the script
             if [[ $timeout_count -ge $max_timeouts ]]; then
-                echo "Timeout limit reached, exiting."
-                # Kill the background process if it's running
+                echo "Reached $max_timeouts timeouts. Need to switch source..."
+                # Kill video-viewer so we can restart
                 pkill -f "video-viewer"
-                exit 1
+                # Return non-zero => indicates "switch source"
+                return 1
             fi
         else
-            # Reset the timeout counter if a different message appears
+            # Reset counter if it's not a timeout message
             timeout_count=0
         fi
     done
 
-    # If we get here, it means the video-viewer has finished or was interrupted
-    # Wait 5 seconds before retrying
+    # If video-viewer exits normally or is interrupted:
+    return 0
+}
+
+##############################################################################
+# MAIN LOOP
+##############################################################################
+while true; do
+    if [ "$use_rtsp" = true ]; then
+        echo "=== Starting RTSP stream ==="
+        stream_rtsp 2>&1 | monitor
+    else
+        echo "=== Starting Webcam (/dev/video4) stream ==="
+        stream_webcam 2>&1 | monitor
+    fi
+
+    exit_code=$?
+
+    # If monitor() returned 1 => switch source
+    if [ "$exit_code" -eq 1 ]; then
+        if [ "$use_rtsp" = true ]; then
+            use_rtsp=false
+        else
+            use_rtsp=true
+        fi
+        # Reset the timeout counter after switching
+        timeout_count=0
+    fi
+
     echo "Retrying in 5 seconds..."
     sleep 5
 done
