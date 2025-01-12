@@ -19,21 +19,27 @@ def on_message(client, userdata, message):
     """Callback: parses the incoming MQTT messages on topic 'location/live'."""
     global latest_location
     payload = message.payload.decode("utf-8").strip()
-    print(f"MQTT message received: {payload}")
+    # print(f"MQTT message received: {payload}")
 
-    try:
-        # Expecting payload like: lat,lon,method,place_name
-        parts = payload.split(",", maxsplit=3)
-        if len(parts) < 3:
-            raise ValueError("Not enough values in payload")
-        method = parts[2]
-        place_name = parts[3] if len(parts) > 3 else "Unknown"
+    if message.topic == "location/live":
+        try:
+            # Expecting payload like: lat,lon,method,place_name
+            parts = payload.split(",", maxsplit=3)
+            if len(parts) < 3:
+                raise ValueError("Not enough values in payload")
+            method = parts[2]
+            place_name = parts[3] if len(parts) > 3 else "Unknown"
 
-        latest_location["method"] = method
-        latest_location["location"] = place_name
-        latest_location["last_update"] = datetime.datetime.now()
-    except Exception as e:
-        print(f"Error parsing location data: {e}")
+            latest_location["method"] = method
+            latest_location["location"] = place_name
+            latest_location["last_update"] = datetime.datetime.now()
+        except Exception as e:
+            print(f"Error parsing location data: {e}")
+    
+    elif message.topic == "object/detection":
+        # Handle object detection messages
+        # print(f"Object detection message received: {payload}")
+        latest_location["detected_objects"] = payload
 
 def init_mqtt_client():
     """Initialize MQTT client, connect, and subscribe to 'location/live'."""
@@ -41,7 +47,8 @@ def init_mqtt_client():
     client.on_message = on_message
     try:
         client.connect("localhost", 1883)  # or your broker details
-        client.subscribe("location/live")
+        client.subscribe("location/live") # Subscribe to location updates
+        client.subscribe("object/detection")  # New topic for object detection
         client.loop_start()
         print("MQTT client connected and subscribed to 'location/live'")
     except Exception as e:
@@ -113,7 +120,7 @@ class VectorDatabase:
 db = VectorDatabase(dim=384)
 db.add_documents(docs)
 
-#  set audio output
+#  set audio IN / OUT
 def set_default_sink_if_available(desired_sink_name):
     """
     Set the default audio output device to the desired sink if it's available and not already selected.
@@ -223,7 +230,6 @@ def ask_llama(query, context):
 #     os.system(f'echo "{text}" | /home/jetson/piper/build/piper --model /usr/local/share/piper/models/en_US-lessac-medium.onnx --output_file response.wav && aplay response.wav')
 
 
-
 # Text-to-speech using gTTS
 def text_to_speech(text):
     """
@@ -276,33 +282,29 @@ def assistant_logic():
 
             print(f"Location response: {response_text}")
             text_to_speech(response_text)
-            return
-
-        elif "detect object" in query.lower():
-            print("Publishing object detection command...")
-            mqtt_client.publish("object/detect", "start")
-            text_to_speech("Object detection command sent.")
-            return
-
-
-        
-        elif "turn off" in query.lower() or "exit" in query.lower():
-            print("Exiting assistant. Goodbye!")
-            text_to_speech("Exiting assistant. Goodbye!")
-            exit(0)
-           
-        
-        # Check if the user wants to run a specific script
-        elif "open camera" in query.lower():
-            print("Running 'vlm' bash script...")
-            text_to_speech("Running the VLM script now.")
-            try:
-                subprocess.run(["/home/jetson/bme/vlm/llava.sh"], check=True)
-                print("Script executed successfully.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error running script: {e}")
-                text_to_speech("There was an error running the script.")
             continue
+
+        elif "open camera" in query.lower() or "object detect" in query.lower():
+            # Retrieve the most recent object detection payload
+            detected_objects = latest_location.get("detected_objects", "No objects detected")
+            response_text = f"Detected objects are: {detected_objects}"
+            print(f"Object Detection Response: {response_text}")
+            text_to_speech(response_text)
+            continue
+
+
+
+        # # Check if the user wants to run a specific script
+        # elif "open camera" in query.lower():
+        #     print("Running 'vlm' bash script...")
+        #     text_to_speech("Running the VLM script now.")
+        #     try:
+        #         subprocess.run(["/home/jetson/bme/vlm/llava.sh"], check=True)
+        #         print("Script executed successfully.")
+        #     except subprocess.CalledProcessError as e:
+        #         print(f"Error running script: {e}")
+        #         text_to_speech("There was an error running the script.")
+        #     continue
         
         response = rag_ask(query)
         response = response.replace("*", "")  # Remove asterisks from the response
