@@ -8,6 +8,7 @@ from jetson_utils import videoSource, videoOutput, Log, cudaFromNumpy
 import subprocess  # Needed for piping frames into ffmpeg
 import logging 
 
+
 # Parse the command line arguments
 parser = argparse.ArgumentParser(description="Locate objects in a live camera stream using an object detection DNN.", 
                                  formatter_class=argparse.RawTextHelpFormatter, 
@@ -95,7 +96,7 @@ while True:
     
     # Convert the captured color frame to a numpy array
     color_image = np.asanyarray(color_frame.get_data())
-    print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
+    #print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
     stream_rtsp(color_image)
 
     # Convert the BGR image to RGB format using OpenCV (this is crucial)

@@ -45,7 +45,7 @@ def convert_to_decimal(degrees_minutes, is_longitude=False):
 def getGpsPosition():
     print("Attempting to get GPS location...")
     sendAt("AT+CGPS=1,1", "OK", 1)
-    #time.sleep(2)
+    time.sleep(3)
     gps_info = sendAt("AT+CGPSINFO", "+CGPSINFO: ", 1)
     if gps_info:
         try:
@@ -97,23 +97,6 @@ def getPlaceName(lat, lon):
         print(f"Error getting place name: {e}")
     return "Unknown Location"
 
-# Function to save location details to a text file
-def save_location_to_file(place_name, method):
-    """
-    Saves location details to a text file named 'location.txt'.
-    Creates the file if it does not already exist.
-    
-    Args:
-        place_name (str): Place name from reverse geocoding.
-        method (str): Method of location retrieval (e.g., GPS or IP).
-        last_update (datetime): Timestamp of the last update.
-    """
-    try:
-        with open("location.txt", "w") as file:  # 'w' mode creates the file if it doesn't exist
-            file.write(f"Your {method} location is {place_name}\n")
-        print("Location details saved to location.txt")
-    except Exception as e:
-        print(f"Error saving location to file: {e}")
 
 # Power on the SIM7600X module
 def powerOn():

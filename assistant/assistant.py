@@ -10,8 +10,6 @@ import datetime
 
 ### Live Location  ###
 latest_location = {
-    "lat": 0.0,
-    "lon": 0.0,
     "method": " ",
     "place_name": "Unknown",
     "last_update": datetime.datetime.now(),
@@ -235,8 +233,9 @@ def text_to_speech(text):
         # Generate speech audio file
         tts = gTTS(text=text, lang='en')
         tts.save("response.mp3")
+
         # Play the audio
-        subprocess.run(["mpg123", "-q","response.mp3"], check=True)
+        subprocess.run(["mpg123","-q","response.mp3"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error playing audio: {e}")
     except Exception as e:
@@ -266,7 +265,7 @@ def assistant_logic():
             print("No input detected. Returning to sleep mode.")
             return  # Exit to sleep mode
         
-        elif "location" in query.lower() or "my location" in query.lower() or 1:
+        elif "location" in query.lower() or "my location" in query.lower():
             # Retrieve the most recent location from latest_location
             place_name = latest_location.get("location", "Unknown")
             method = latest_location.get("method", "Unknown")
@@ -278,6 +277,14 @@ def assistant_logic():
             print(f"Location response: {response_text}")
             text_to_speech(response_text)
             return
+
+        elif "detect object" in query.lower():
+            print("Publishing object detection command...")
+            mqtt_client.publish("object/detect", "start")
+            text_to_speech("Object detection command sent.")
+            return
+
+
         
         elif "turn off" in query.lower() or "exit" in query.lower():
             print("Exiting assistant. Goodbye!")
