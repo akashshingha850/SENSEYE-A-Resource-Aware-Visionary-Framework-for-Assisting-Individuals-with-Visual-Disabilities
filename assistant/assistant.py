@@ -80,6 +80,11 @@ embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 whisper_model = whisper.load_model("base").to(device)
 
+# # Hotword Configuration
+# HOTWORD = "hello"
+# SAMPLE_RATE = 16000
+# CHUNK_DURATION = 2  # Duration of each audio chunk (in seconds)
+
 # Configuration for local LLM server
 llama_url = "http://127.0.0.1:8080/completion"
 
@@ -187,9 +192,9 @@ def play_sound(sound_file):
     os.system(f"aplay -q {sound_file}")
 
 # Record audio using sounddevice
-def record_audio(duration=1, fs=16000):
+def record_audio(duration, fs=16000):
     """Record short audio for hotword detection or commands."""
-    print("Recording audio...")
+    # print("Recording...")
     audio = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
     sd.wait()
     return audio
@@ -257,16 +262,17 @@ def text_to_speech(text):
 def assistant_logic():
     """Handles commands after the hotword is detected."""
     print("Hotword detected! Assistant is now active.")
-    text_to_speech("I'm listening. How can I assist?")
+    text_to_speech("Yes!")
     
     while True:
+        print("Listening for user command...")
         play_sound(bip_sound)  # Start beep
         audio_data = record_audio(duration=5)  # Record user command
         play_sound(bip2_sound)  # End beep
         query = transcribe_audio(audio_data)
         print(f"User said: {query}")
         
-        if not query:
+        if not query or "sleep" in query.lower() or "stop" in query.lower():
             text_to_speech("Going to sleep mode.")
             print("No input detected. Returning to sleep mode.")
             return  # Exit to sleep mode
@@ -287,9 +293,8 @@ def assistant_logic():
         elif "open camera" in query.lower() or "object detect" in query.lower():
             # Retrieve the most recent object detection payload
             detected_objects = latest_location.get("detected_objects", "No objects detected")
-            response_text = f"Detected objects are: {detected_objects}"
-            print(f"Object Detection Response: {response_text}")
-            text_to_speech(response_text)
+            print(response_text)
+            text_to_speech(detected_objects)
             continue
 
 
@@ -328,10 +333,11 @@ def main():
 
     """Continuously listens for the hotword and triggers assistant logic."""
     hotword = "hello"  # Set your hotword
-    print("Listening for hotword...")
+    #print("Listening for hotword...")
     
     while True:
-        audio_data = record_audio(duration=3)  # Record short audio for hotword detection
+        print("Listening for hotword...")
+        audio_data = record_audio(duration=2)  # Record short audio for hotword detection
         transcription = transcribe_audio(audio_data)
         print(f"Detected text: {transcription}")
         
