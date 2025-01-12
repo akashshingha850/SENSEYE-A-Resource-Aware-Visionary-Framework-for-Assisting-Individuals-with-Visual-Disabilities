@@ -61,21 +61,21 @@ start_mediamtx_loop() {
 # Continuously run the object detection script, retrying if it fails
 start_object_detection_loop() {
     while true; do
-        echo "Starting object_distance_rtsp.py..."
+        echo "Starting object.py..."
         # Echo the sudo password and run python
         echo "$SUDO_PASSWORD" | sudo -S python3 "$OBJECT_DETECTION_SCRIPT"
 
         if [ $? -ne 0 ]; then
-            echo "object_distance_rtsp.py failed. Retrying in 3 seconds..."
+            echo "object.py failed. Retrying in 3 seconds..."
             sleep 3
         else
-            echo "object_distance_rtsp.py exited successfully. Exiting loop..."
+            echo "object.py exited successfully. Exiting loop..."
             # If your script can exit “successfully,” you might want to break,
             # or you can remove this logic to always keep it running.
             break
         fi
 
-        echo "Restarting object_distance_rtsp.py in 5 seconds..."
+        echo "Restarting object.py in 5 seconds..."
         sleep 5
     done
 }

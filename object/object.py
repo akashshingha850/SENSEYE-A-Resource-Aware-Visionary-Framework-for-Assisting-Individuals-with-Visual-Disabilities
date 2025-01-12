@@ -7,6 +7,7 @@ from jetson_inference import detectNet
 from jetson_utils import videoSource, videoOutput, Log, cudaFromNumpy
 import subprocess  # Needed for piping frames into ffmpeg
 import logging 
+import paho.mqtt.client as mqtt
 
 
 # Parse the command line arguments
@@ -26,6 +27,19 @@ except:
     print("")
     parser.print_help()
     sys.exit(0)
+
+# MQTT Broker Configuration
+BROKER_ADDRESS = "localhost"
+TOPIC = "object/detection"
+
+# Initialize MQTT client
+mqtt_client = mqtt.Client()
+try:
+    mqtt_client.connect(BROKER_ADDRESS, 1883)
+    mqtt_client.loop_start()
+    print(f"Connected to MQTT broker at {BROKER_ADDRESS}")
+except Exception as e:
+    print(f"Error connecting to MQTT broker: {e}")
 
 # Initialize the RealSense pipeline
 pipeline = rs.pipeline()
@@ -84,86 +98,121 @@ def stream_rtsp(frame):
         sys.exit(1)
 
 # Capture frames until EOS or the user exits
-while True:
-    # Capture frames from the RealSense camera
-    frames = pipeline.wait_for_frames()
-    color_frame = frames.get_color_frame()
-    depth_frame = frames.get_depth_frame()
+try:
+    while True:
+        # Capture frames from the RealSense camera
+        frames = pipeline.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        depth_frame = frames.get_depth_frame()
 
-    if not color_frame or not depth_frame:
-        print("Failed to capture color or depth frame")
-        continue  # Continue capturing frames if this happens
-    
-    # Convert the captured color frame to a numpy array
-    color_image = np.asanyarray(color_frame.get_data())
-    #print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
-    stream_rtsp(color_image)
-
-    # Convert the BGR image to RGB format using OpenCV (this is crucial)
-    rgb_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
-    # cv2.imshow("RGB Image", color_image)
-    # key=cv2.waitKey(1)
-
-    # Convert the RGB image (numpy array) to CUDA memory that Jetson Inference can use
-    cuda_image = cudaFromNumpy(rgb_image)
-    # output.Render(cuda_image) 
-    # continue
-
-    # Detect objects in the image (with overlay)
-    detections = net.Detect(cuda_image, overlay=args.overlay)
-
-    print(f"Detected {len(detections)} objects")
-
-    # Loop over each detection and print the details
-    for detection in detections:
-        # Access the detection properties (Center, Width, Height)
-        center_x, center_y = detection.Center  # Center is a tuple (x, y)
-        width, height = detection.Width, detection.Height
+        if not color_frame or not depth_frame:
+            print("Failed to capture color or depth frame")
+            continue  # Continue capturing frames if this happens
         
-        # Calculate the top-left corner (x1, y1) and bottom-right corner (x2, y2)
-        x1 = int(center_x - width / 2)
-        y1 = int(center_y - height / 2)
-        x2 = int(center_x + width / 2)
-        y2 = int(center_y + height / 2)
+        # Convert the captured color frame to a numpy array
+        color_image = np.asanyarray(color_frame.get_data())
+        #print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
+        
+        # Convert the BGR image to RGB format using OpenCV (this is crucial)
+        rgb_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+        # cv2.imshow("RGB Image", color_image)
+        # key=cv2.waitKey(1)
 
-        # Calculate the center of the bounding box (if needed)
-        center_x = (x1 + x2) // 2
-        center_y = (y1 + y2) // 2
+        # Convert the RGB image (numpy array) to CUDA memory that Jetson Inference can use
+        cuda_image = cudaFromNumpy(rgb_image)
+        # output.Render(cuda_image) 
+        # continue
 
-        # Get the depth value at the center of the bounding box
-        distance = depth_frame.get_distance(center_x, center_y)  # Distance in meters
+        # Detect objects in the image (with overlay)
+        detections = net.Detect(cuda_image, overlay=args.overlay)
 
-        # Get confidence value and object label
-        confidence = detection.Confidence
-        label = detection.ClassID
-        label_name = net.GetClassDesc(label)  # Get the class name based on class ID
+        detected_objects = []
+        detected_objects.append(f"detected {len(detections)} objects.")
+        print(f"Detected {len(detections)} objects")
 
-        # Prepare the overlay text with object label, distance, and confidence
-        overlay_text = f"{confidence*100:.1f}% {label_name} at {distance:.2f}m"
 
-        # Set the color for the bounding box
-        box_color = (255, 255, 255)  # White color for the bounding box
-        cv2.rectangle(color_image, (x1, y1), (x2, y2), box_color, 1)
-        cv2.putText(color_image, overlay_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, box_color, 1, cv2.LINE_AA)
+        # Loop over each detection and print the details
+        for detection in detections:
+            # Access the detection properties (Center, Width, Height)
+            center_x, center_y = detection.Center  # Center is a tuple (x, y)
+            width, height = detection.Width, detection.Height
+            
+            # Calculate the top-left corner (x1, y1) and bottom-right corner (x2, y2)
+            x1 = int(center_x - width / 2)
+            y1 = int(center_y - height / 2)
+            x2 = int(center_x + width / 2)
+            y2 = int(center_y + height / 2)
 
-        # Print the distance, label, and confidence
-        print(f"Object: {label_name}, Distance: {distance:.2f} meters, Confidence: {confidence*100:.1f}%")
+            # Calculate the center of the bounding box (if needed)
+            center_x = (x1 + x2) // 2
+            center_y = (y1 + y2) // 2
 
-    # Convert the color image back to CUDA memory and render
-    final_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
-    cuda_image = cudaFromNumpy(final_image)
+            # Get the depth value at the center of the bounding box
+            distance = depth_frame.get_distance(center_x, center_y)  # Distance in meters
+
+            # Get confidence value and object label
+            confidence = detection.Confidence
+            label = detection.ClassID
+            label_name = net.GetClassDesc(label)  # Get the class name based on class ID
+            detected_objects.append(f"{label_name} at {distance:.2f} meters")
+
+            # Prepare the overlay text with object label, distance, and confidence
+            overlay_text = f"{confidence*100:.1f}% {label_name} at {distance:.2f}m"
+
+            # Set the color for the bounding box
+            box_color = (255, 255, 255)  # White color for the bounding box
+            cv2.rectangle(color_image, (x1, y1), (x2, y2), box_color, 1)
+            cv2.putText(color_image, overlay_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, box_color, 1, cv2.LINE_AA)
+
+            # Print the distance, label, and confidence
+            print(f"Object: {label_name}, Distance: {distance:.2f} meters, Confidence: {confidence*100:.1f}%")
+
+        # Stream the frame to FFmpeg
+        stream_rtsp(color_image) # rgb_image , color_image , final_image , cuda_image 
+
+        # Publish the detected objects to the MQTT broker
+        if len(detected_objects) > 1:
+            payload = "; ".join(detected_objects)
+            print(f"Publishing: {payload}")
+            mqtt_client.publish(TOPIC, payload)
+
+
+        # # Convert the color image back to CUDA memory and render
+        # final_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+        # cuda_image = cudaFromNumpy(final_image)
     
-    # # Render the image with detections
-    # output.Render(cuda_image)  
-    # output.SetStatus("Object Detection | Network FPS: {:.2f}".format(net.GetNetworkFPS()))  # Show FPS
+        # output.Render(cuda_image)  # Render the image with detections
+        # output.SetStatus("Object Detection | Network FPS: {:.2f}".format(net.GetNetworkFPS()))  # Show FPS
 
-    # # Print out performance info
-    # net.PrintProfilerTimes()
-   
+        # # Print out performance info
+        # net.PrintProfilerTimes()
+    
 
-    # Exit on input/output EOS
-    if not output.IsStreaming():
-        break
+        # Exit on input/output EOS
+        if not output.IsStreaming():
+            break
 
-# Stop the RealSense pipeline after processing
-pipeline.stop()
+except KeyboardInterrupt:
+    print("Exiting on user interrupt...")
+    
+finally:
+    # Stop the RealSense pipeline after processing
+    pipeline.stop()
+
+    # Stop the FFmpeg process
+    ffmpeg_process.stdin.close()
+    ffmpeg_process.wait()
+    print("FFmpeg process terminated.")
+
+    # Disconnect from the MQTT broker
+    mqtt_client.loop_stop()
+    mqtt_client.disconnect()
+    print("Disconnected from MQTT broker.")
+
+    # Clean up the CUDA memory and close the video output
+    output.Close()
+    del net
+    print("Object detection completed.")
+
+    # Exit the program
+    sys.exit(0)
