@@ -1,5 +1,4 @@
-import whisper, requests, os, sounddevice as sd, numpy as np, tempfile, wave
-import faiss
+import whisper, requests, os, sounddevice as sd, numpy as np, tempfile, wave, time, faiss
 from sentence_transformers import SentenceTransformer
 import torch
 import subprocess
@@ -15,11 +14,13 @@ latest_location = {
     "last_update": datetime.datetime.now(),
 }
 
+# Declare mqtt_client as global
+mqtt_client = None
+
 def on_message(client, userdata, message):
-    """Callback: parses the incoming MQTT messages on topic 'location/live'."""
+    """Callback: parses the incoming MQTT messages on topic 'location/live' or 'object/detection'."""
     global latest_location
     payload = message.payload.decode("utf-8").strip()
-    # print(f"MQTT message received: {payload}")
 
     if message.topic == "location/live":
         try:
@@ -36,24 +37,23 @@ def on_message(client, userdata, message):
         except Exception as e:
             print(f"Error parsing location data: {e}")
     
-    elif message.topic == "object/detection":
-        # Handle object detection messages
-        # print(f"Object detection message received: {payload}")
+    elif message.topic == "response/object":
+        # Handle object detection response
         latest_location["detected_objects"] = payload
 
 def init_mqtt_client():
-    """Initialize MQTT client, connect, and subscribe to 'location/live'."""
-    client = mqtt.Client()
-    client.on_message = on_message
+    """Initialize MQTT client, connect, and subscribe to 'location/live' and 'response/object'."""
+    global mqtt_client  # Ensure it's global
+    mqtt_client = mqtt.Client()
+    mqtt_client.on_message = on_message
     try:
-        client.connect("localhost", 1883)  # or your broker details
-        client.subscribe("location/live") # Subscribe to location updates
-        client.subscribe("object/detection")  # New topic for object detection
-        client.loop_start()
-        print("MQTT client connected and subscribed to 'location/live'")
+        mqtt_client.connect("localhost", 1883)
+        mqtt_client.subscribe("location/live")  # Subscribe to location updates
+        mqtt_client.subscribe("response/object")  # Subscribe to object detection results
+        mqtt_client.loop_start()
+        print("MQTT client connected and subscribed to 'location/live' and 'response/object'")
     except Exception as e:
         print(f"Error connecting to MQTT broker: {e}")
-    return client
 
 def time_ago(timestamp):
     """
@@ -263,6 +263,7 @@ def assistant_logic():
     """Handles commands after the hotword is detected."""
     print("Hotword detected! Assistant is now active.")
     text_to_speech("Yes!")
+    global mqtt_client  # Declare mqtt_client as global
     
     while True:
         print("Listening for user command...")
@@ -272,7 +273,7 @@ def assistant_logic():
         query = transcribe_audio(audio_data)
         print(f"User said: {query}")
         
-        if not query or "sleep" in query.lower() or "stop" in query.lower():
+        if not query or "sleep" in query.lower() or "stop" in query.lower() or "exit" in query.lower() or "quit" in query.lower()   or "shut down" in query.lower():
             text_to_speech("Going to sleep mode.")
             print("No input detected. Returning to sleep mode.")
             return  # Exit to sleep mode
@@ -290,11 +291,27 @@ def assistant_logic():
             text_to_speech(response_text)
             continue
 
-        elif "open camera" in query.lower() or "object detect" in query.lower():
-            # Retrieve the most recent object detection payload
-            detected_objects = latest_location.get("detected_objects", "No objects detected")
-            print(response_text)
-            text_to_speech(detected_objects)
+        elif "object detect" in query.lower() or "detect object" in query.lower():
+            # Send MQTT message to trigger object detection
+            mqtt_client.publish("query/object", "object")
+            print("Requesting object detection...")
+
+            # Wait for response (with timeout)
+            print("Waiting for object detection results...")
+            start_time = time.time()
+            detected_objects = None
+            while time.time() - start_time < 10:  # Wait for 10 seconds max
+                if "detected_objects" in latest_location:
+                    detected_objects = latest_location["detected_objects"]
+                    break
+                time.sleep(1)  # Poll every second
+
+            if detected_objects:
+                print(f"Detected objects: {detected_objects}")
+                text_to_speech(detected_objects)
+            else:
+                print("No objects detected or timeout reached.")
+                text_to_speech("No objects detected.")
             continue
 
 
