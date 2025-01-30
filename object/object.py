@@ -113,6 +113,9 @@ try:
         color_image = np.asanyarray(color_frame.get_data())
         #print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
         
+        stream_rtsp(color_image)
+        continue
+
         # Convert the BGR image to RGB format using OpenCV (this is crucial)
         rgb_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
         # cv2.imshow("RGB Image", color_image)
@@ -121,7 +124,6 @@ try:
         # Convert the RGB image (numpy array) to CUDA memory that Jetson Inference can use
         cuda_image = cudaFromNumpy(rgb_image)
         # output.Render(cuda_image) 
-        # continue
 
         # Detect objects in the image (with overlay)
         detections = net.Detect(cuda_image, overlay=args.overlay)
@@ -167,8 +169,8 @@ try:
             # Print the distance, label, and confidence
             print(f"Object: {label_name}, Distance: {distance:.2f} meters, Confidence: {confidence*100:.1f}%")
 
-        # Stream the frame to FFmpeg
-        stream_rtsp(color_image) # rgb_image , color_image , final_image , cuda_image 
+        # # Stream the frame to FFmpeg
+        # stream_rtsp(color_image) # rgb_image , color_image , final_image , cuda_image 
 
         # Publish the detected objects to the MQTT broker
         if len(detected_objects) > 1:
