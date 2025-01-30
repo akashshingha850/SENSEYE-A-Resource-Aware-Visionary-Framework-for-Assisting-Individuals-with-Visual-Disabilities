@@ -114,7 +114,7 @@ try:
         #print(f"Captured frame: {color_image.shape}")  # Print shape of captured frame
         
         stream_rtsp(color_image)
-        continue
+        # continue
 
         # Convert the BGR image to RGB format using OpenCV (this is crucial)
         rgb_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)

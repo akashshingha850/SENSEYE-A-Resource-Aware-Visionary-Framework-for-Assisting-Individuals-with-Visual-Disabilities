@@ -78,7 +78,7 @@ embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 # Optimization: Explicitly use CUDA if available, with fallback to CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-whisper_model = whisper.load_model("base").to(device)
+whisper_model = whisper.load_model("base").to(device) #  "tiny" "base" "small" "medium" "large"
 
 # # Hotword Configuration
 # HOTWORD = "hello"
