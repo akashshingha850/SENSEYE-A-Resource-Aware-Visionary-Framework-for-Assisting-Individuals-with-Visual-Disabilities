@@ -7,6 +7,7 @@ from gtts import gTTS
 import paho.mqtt.client as mqtt
 import datetime
 
+# MQTT client to receive location updates and object detection results
 ### Live Location  ###
 latest_location = {
     "method": " ",
@@ -315,18 +316,16 @@ def assistant_logic():
             continue
 
 
-
-        # # Check if the user wants to run a specific script
-        # elif "open camera" in query.lower():
-        #     print("Running 'vlm' bash script...")
-        #     text_to_speech("Running the VLM script now.")
-        #     try:
-        #         subprocess.run(["/home/jetson/bme/vlm/llava.sh"], check=True)
-        #         print("Script executed successfully.")
-        #     except subprocess.CalledProcessError as e:
-        #         print(f"Error running script: {e}")
-        #         text_to_speech("There was an error running the script.")
-        #     continue
+        elif "open camera" in query.lower() or "ok" in query.lower():
+            print("Running 'vlm' bash script...")
+            text_to_speech("Running the VLM script now.")
+            try:
+                subprocess.run(["/home/jetson/bme/vision/vision.sh"], check=True)
+                print("VLM executed successfully.")
+            except subprocess.CalledProcessError as e:
+                print(f"Error running script: {e}")
+                text_to_speech("There was an error running the script.")
+            continue
         
         response = rag_ask(query)
         response = response.replace("*", "")  # Remove asterisks from the response
