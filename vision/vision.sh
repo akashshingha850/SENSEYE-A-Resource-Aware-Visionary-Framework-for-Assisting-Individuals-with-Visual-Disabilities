@@ -1,3 +1,5 @@
+#!/bin/bash
+
 jetson-containers run $(autotag nano_llm) \
   python3 -m nano_llm.chat --api=mlc \
     --model Efficient-Large-Model/VILA1.5-3b \
