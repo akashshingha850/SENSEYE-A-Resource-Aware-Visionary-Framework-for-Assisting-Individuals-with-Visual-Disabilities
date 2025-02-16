@@ -6,7 +6,7 @@ start_llama_server() {
     while true; do
         echo "Starting llama-server..."
         cd ~/bme/assistant/llama.cpp/build || exit 1
-        ./bin/llama-server -m ../models/gemma-2-2b-it-Q4_K_S.gguf -p 5000 -t 4 -c 1024 --gpu-layers 30
+        ./bin/llama-server -m ../models/qwen2-0.5b-q4_k_m.gguf -p 5000 -t 4 -c 1024 --gpu-layers 30 # gemma-2-2b-it-Q4_K_S.gguf
         
         echo "llama-server crashed or exited. Restarting in 5 seconds..."
         sleep 5

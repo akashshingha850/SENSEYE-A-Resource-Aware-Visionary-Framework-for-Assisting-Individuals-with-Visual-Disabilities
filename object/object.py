@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(description="Locate objects in a live camera st
 
 parser.add_argument("input", type=str, default="", nargs='?', help="URI of the input stream")
 parser.add_argument("output", type=str, default="", nargs='?', help="URI of the output stream")
-parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load")
+parser.add_argument("--network", type=str, default="ssd-inception-v2", help="pre-trained model to load") # ssd-mobilenet-v2 
 parser.add_argument("--overlay", type=str, default="lines", help="detection overlay flags")
 parser.add_argument("--threshold", type=float, default=0.4, help="minimum detection threshold to use")
 
