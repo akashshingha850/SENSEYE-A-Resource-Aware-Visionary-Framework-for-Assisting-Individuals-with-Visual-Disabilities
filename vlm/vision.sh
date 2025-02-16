@@ -1,12 +1,14 @@
 #!/bin/bash
 
-jetson-containers run $(autotag nano_llm) \
-  python3 -m nano_llm.chat --api=mlc \
+jetson-containers run \
+  -v /home/jetson/bme/vlm:/vlm \
+  $(autotag nano_llm) \
+  python3 /vlm/vision.py --api=mlc \
     --model Efficient-Large-Model/VILA1.5-3b \
     --max-context-len 128 \
-    --max-new-tokens 32 \
-    --prompt '/data/images/dog.jpg' \
-    --prompt 'describe the image concisely.'
+    --max-new-tokens 32 
+    #--prompt '/data/images/lake.jpg' \
+    #--prompt 'describe the image concisely.'
 
 # Efficient-Large-Model/VILA1.5-3b
 # liuhaotian/llava-v1.5-7b

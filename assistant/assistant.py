@@ -317,10 +317,12 @@ def assistant_logic():
 
 
         elif "open camera" in query.lower() or "ok" in query.lower():
+            mqtt_client.publish("query/object", "vlm")
+            
             print("Running 'vlm' bash script...")
             text_to_speech("Running the VLM script now.")
             try:
-                subprocess.run(["/home/jetson/bme/vision/vision.sh"], check=True)
+                #subprocess.run(["/home/jetson/bme/vlm/vision.sh"], check=True)
                 print("VLM executed successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"Error running script: {e}")

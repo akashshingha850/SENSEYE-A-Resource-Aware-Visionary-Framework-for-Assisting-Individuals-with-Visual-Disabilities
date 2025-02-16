@@ -29,18 +29,25 @@ except:
 
 # MQTT Broker Configuration
 BROKER_ADDRESS = "localhost"
-TOPIC_QUERY = "query/object"  # Topic to trigger object detection
+TOPIC_QUERY_OBJ = "query/object"  # Topic to trigger object detection
+TOPIC_QUERY_VLM = "query/vlm"  # Topic to trigger VLM
 TOPIC_RESPONSE = "response/object"  # Topic to publish detection results
 mqtt_client = None
 detect_objects_flag = False  # Flag to trigger object detection when received MQTT message
+detect_frame_flag = False  # Flag to trigger VLM when received MQTT message
 
 # MQTT Callback function
 def on_message(client, userdata, message):
     global detect_objects_flag
+    global detect_frame_flag
     payload = message.payload.decode("utf-8").strip()
     if payload == "object":
         print("Object detection triggered via MQTT")
         detect_objects_flag = True
+
+    if payload == "vlm":
+        print("VLM triggered via MQTT")
+        detect_frame_flag = True
 
 # Initialize MQTT client
 def init_mqtt_client():
@@ -49,7 +56,8 @@ def init_mqtt_client():
     mqtt_client.on_message = on_message
     try:
         mqtt_client.connect(BROKER_ADDRESS, 1883)
-        mqtt_client.subscribe(TOPIC_QUERY)  # Subscribe to the query topic
+        mqtt_client.subscribe(TOPIC_QUERY_OBJ)  # Subscribe to the query topic
+        mqtt_client.subscribe(TOPIC_QUERY_VLM)  # Subscribe to the query topic
         mqtt_client.loop_start()
         print(f"Connected to MQTT broker at {BROKER_ADDRESS}")
     except Exception as e:
@@ -129,6 +137,12 @@ try:
 
         # Stream the frame to FFmpeg continuously
         stream_rtsp(color_image)
+
+        if detect_frame_flag:
+            # save color image to  /home/jetson/bme/vlm  as frame.jpg
+            cv2.imwrite("/home/jetson/bme/vlm/frame.jpg", color_image)
+            print("Frame saved for VLM")
+            detect_frame_flag = False
 
         if detect_objects_flag:
             print("Performing object detection...")
