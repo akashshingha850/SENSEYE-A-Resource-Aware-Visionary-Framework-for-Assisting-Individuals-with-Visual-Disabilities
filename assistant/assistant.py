@@ -18,11 +18,27 @@ latest_location = {
 # Declare mqtt_client as global
 mqtt_client = None
 
+def init_mqtt_client():
+    """Initialize MQTT client, connect, and subscribe to 'location/live', 'response/object', and 'response/vlm'."""
+    global mqtt_client  # Ensure it's global
+    mqtt_client = mqtt.Client()
+    mqtt_client.on_message = on_message
+    try:
+        mqtt_client.connect("localhost", 1883)
+        mqtt_client.subscribe("location/live")  # Subscribe to location updates
+        mqtt_client.subscribe("response/object")  # Subscribe to object detection results
+        mqtt_client.subscribe("response/vlm")  # Subscribe to VLM response
+        mqtt_client.loop_start()
+        print("MQTT client connected and subscribed to 'location/live', 'response/object', and 'response/vlm'")
+    except Exception as e:
+        print(f"Error connecting to MQTT broker: {e}")
+
 def on_message(client, userdata, message):
-    """Callback: parses the incoming MQTT messages on topic 'location/live' or 'object/detection'."""
+    """Callback: parses the incoming MQTT messages on topic 'location/live', 'object/detection', or 'response/vlm'."""
     global latest_location
     payload = message.payload.decode("utf-8").strip()
 
+    print(f"Received message on topic: {message.topic}")  # Debugging line
     if message.topic == "location/live":
         try:
             # Expecting payload like: lat,lon,method,place_name
@@ -41,20 +57,57 @@ def on_message(client, userdata, message):
     elif message.topic == "response/object":
         # Handle object detection response
         latest_location["detected_objects"] = payload
+        print(f"Object detected: {payload}")  # Debugging line
+    
+    elif message.topic == "response/vlm":
+        # Handle VLM response
+        latest_location["response_vlm"] = payload
+        print(f"VLM response received: {payload}")  # Debugging line
 
-def init_mqtt_client():
-    """Initialize MQTT client, connect, and subscribe to 'location/live' and 'response/object'."""
-    global mqtt_client  # Ensure it's global
-    mqtt_client = mqtt.Client()
-    mqtt_client.on_message = on_message
-    try:
-        mqtt_client.connect("localhost", 1883)
-        mqtt_client.subscribe("location/live")  # Subscribe to location updates
-        mqtt_client.subscribe("response/object")  # Subscribe to object detection results
-        mqtt_client.loop_start()
-        print("MQTT client connected and subscribed to 'location/live' and 'response/object'")
-    except Exception as e:
-        print(f"Error connecting to MQTT broker: {e}")
+
+# def on_message(client, userdata, message):
+#     """Callback: parses the incoming MQTT messages on topic 'location/live' or 'object/detection'."""
+#     global latest_location
+#     payload = message.payload.decode("utf-8").strip()
+
+#     if message.topic == "location/live":
+#         try:
+#             # Expecting payload like: lat,lon,method,place_name
+#             parts = payload.split(",", maxsplit=3)
+#             if len(parts) < 3:
+#                 raise ValueError("Not enough values in payload")
+#             method = parts[2]
+#             place_name = parts[3] if len(parts) > 3 else "Unknown"
+
+#             latest_location["method"] = method
+#             latest_location["location"] = place_name
+#             latest_location["last_update"] = datetime.datetime.now()
+#         except Exception as e:
+#             print(f"Error parsing location data: {e}")
+    
+#     elif message.topic == "response/object":
+#         # Handle object detection response
+#         latest_location["detected_objects"] = payload
+#     elif message.topic == "response/vlm":
+#         latest_location["response_vlm"] = payload   
+#         print(f"Received VLM response: {payload}")  # Debugging line
+     
+
+# def init_mqtt_client():
+#     """Initialize MQTT client, connect, and subscribe to 'location/live' and 'response/object'."""
+#     global mqtt_client  # Ensure it's global
+#     mqtt_client = mqtt.Client()
+#     mqtt_client.on_message = on_message
+#     try:
+#         mqtt_client.connect("localhost", 1883)
+#         mqtt_client.subscribe("location/live")  # Subscribe to location updates
+#         mqtt_client.subscribe("response/object")  # Subscribe to object detection results
+#         mqtt_client.subscribe("response/vlm")  # Subscribe to VLM responses
+
+#         mqtt_client.loop_start()
+#         print("MQTT client connected and subscribed to 'location/live' and 'response/object'")
+#     except Exception as e:
+#         print(f"Error connecting to MQTT broker: {e}")
 
 def time_ago(timestamp):
     """
@@ -314,19 +367,30 @@ def assistant_logic():
                 print("No objects detected or timeout reached.")
                 text_to_speech("No objects detected.")
             continue
-
-
+        
         elif "open camera" in query.lower() or "ok" in query.lower():
             mqtt_client.publish("query/object", "vlm")
             
             print("Running 'vlm' bash script...")
             text_to_speech("Running the VLM script now.")
-            try:
-                #subprocess.run(["/home/jetson/bme/vlm/vision.sh"], check=True)
-                print("VLM executed successfully.")
-            except subprocess.CalledProcessError as e:
-                print(f"Error running script: {e}")
-                text_to_speech("There was an error running the script.")
+            
+            # Wait for VLM response
+            print("Waiting for VLM results...")
+            start_time = time.time()
+            response_text = None
+            while time.time() - start_time < 10:  # Wait for 10 seconds max
+                if "response_vlm" in latest_location:
+                    response_text = latest_location["response_vlm"]
+                    break
+                time.sleep(1)  # Poll every second
+
+            if response_text:
+                print(f"VLM response: {response_text}")
+                text_to_speech(response_text)
+            else:
+                print("VLM response timeout or no response.")
+                text_to_speech("No VLM response received.")
+            
             continue
         
         response = rag_ask(query)

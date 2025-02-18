@@ -1,8 +1,11 @@
 #!/bin/bash
 
+#python3 vision.py --api=mlc --model Efficient-Large-Model/VILA1.5-3b --max-context-len 128 --max-new-tokens 32
+
+
 jetson-containers run \
   -v /home/jetson/bme/vlm:/vlm \
-  $(autotag nano_llm) \
+  $(autotag custom_nano_llm) \
   python3 /vlm/vision.py --api=mlc \
     --model Efficient-Large-Model/VILA1.5-3b \
     --max-context-len 128 \
