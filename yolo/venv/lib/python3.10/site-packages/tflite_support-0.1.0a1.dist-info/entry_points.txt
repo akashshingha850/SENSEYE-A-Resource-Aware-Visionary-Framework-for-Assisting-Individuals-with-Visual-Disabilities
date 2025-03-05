@@ -1,0 +1,3 @@
+[console_scripts]
+tflite_codegen = tflite_support.codegen:main
+
