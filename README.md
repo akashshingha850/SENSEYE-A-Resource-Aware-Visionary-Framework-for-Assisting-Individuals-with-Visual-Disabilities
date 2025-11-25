@@ -244,9 +244,10 @@ This project is part of academic research. Please cite appropriately if used in 
 ## 📧 Contact
 
 For questions or collaboration:
-- **Author**: Akash Shingha
+- **Author**: Akash Shingha Bappy, Tapio Seppänen, and Md Ziaul Hoque
 - **Project**: BME Assistive Technology Research
-- **Institution**: [University/Institution Name]
+- **Institution**: University of Oulu, Finland
+
 
 ## 🙏 Acknowledgments
 
